@@ -1,19 +1,35 @@
 import os
 from fastapi import FastAPI, HTTPException
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api import (
+    YouTubeTranscriptApi,
+    TranscriptsDisabled,
+    NoTranscriptFound,
+)
+from youtube_transcript_api.proxies import WebshareProxyConfig
 
 app = FastAPI(title="YouTube Transcript Extractor Microservice")
 
+WEBSHARE_USERNAME = os.environ.get("WEBSHARE_PROXY_USERNAME")
+WEBSHARE_PASSWORD = os.environ.get("WEBSHARE_PROXY_PASSWORD")
+
+def get_api_client():
+    if WEBSHARE_USERNAME and WEBSHARE_PASSWORD:
+        return YouTubeTranscriptApi(
+            proxy_config=WebshareProxyConfig(
+                proxy_username=WEBSHARE_USERNAME,
+                proxy_password=WEBSHARE_PASSWORD,
+            )
+        )
+    return YouTubeTranscriptApi()
+
 @app.get("/transcript/{video_id}")
 def get_transcript(video_id: str):
-    """
-    Fetches the plain-text English transcript for a given YouTube Video ID.
-    """
     if not video_id or len(video_id) != 11:
         raise HTTPException(status_code=400, detail="Invalid YouTube Video ID format.")
 
     try:
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        client = get_api_client()
+        transcript_list = client.list_transcripts(video_id)
 
         try:
             transcript = transcript_list.find_manually_created_transcript(['en'])
