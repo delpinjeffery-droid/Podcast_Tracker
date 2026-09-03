@@ -29,7 +29,7 @@ def get_transcript(video_id: str):
 
     try:
         client = get_api_client()
-        transcript_list = client.list_transcripts(video_id)
+        transcript_list = client.list(video_id)
 
         try:
             transcript = transcript_list.find_manually_created_transcript(['en'])
@@ -37,7 +37,7 @@ def get_transcript(video_id: str):
             transcript = transcript_list.find_generated_transcript(['en'])
 
         full_data = transcript.fetch()
-        merged_text = " ".join([entry['text'] for entry in full_data])
+        merged_text = " ".join([snippet.text for snippet in full_data])
 
         return {
             "video_id": video_id,
